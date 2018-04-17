@@ -245,12 +245,13 @@ def equalizacao_histograma(img):
         indice.append([])
         soma = 0
         for i in range(len(h_n)):
+            soma += h_n[i]
             indice[-1].append( round ( ( (L - 1) / (l*a) ) * soma )  )
-       
+      
     indice = np.array(indice).astype(np.uint8)
     
     if tam == 3:
-        for i in range(tam):
+        for i in range(tam): 
             img_rgb[:, :, i] = indice[i, img_rgb[:, :, i]]
             img = pil.fromarray(img_rgb, 'RGB')
     else:
