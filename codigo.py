@@ -1,201 +1,341 @@
-import copy
-import PIL as pil
 import numpy as np
-# import scipy as sc
+import scipy as sc
+from PIL import Image as pil
+import copy
 import matplotlib.pyplot as plt
 
+#1
+def img_p_rgba(loc_img):
+	img = pil.open(loc_img, 'r')
+	array = np.array(img.convert('RGBA'))
+	
+	return array
 
-# import tkinter.filedialog as tkfile
+#2
+def rgba_p_tc(array_rgba, tipo):
+	nl = array_rgba.shape[0]
+	nc = array_rgba.shape[1]
+	
+	array_tc = np.zeros((nl,nc)).astype(np.uint8)
+		
+	#leveza
+	if tipo == 1:	
+		array_tc[:, :] = ( array_rgba[:,:,:-1].astype(np.uint16).max(axis=2)+array_rgba[:,:,:-1].astype(np.uint16).min(axis=2) ) / 2
+	
+	#media
+	if tipo == 2:
+		array_tc[:, :] = (np.uint16(array_rgba[:,:,0]) + np.uint16(array_rgba[:,:,1]) + np.uint16(array_rgba[:,:,2]))//3
+		
+	#luminosidade
+	if tipo == 3:
+		array_tc[:, :] = 0.21*array_rgba[:,:,0] + 0.72*array_rgba[:,:,1] + 0.07*array_rgba[:,:,2]
+		
+	return array_tc
+
+#3
+def tc_p_rgba(array_tc):
+	nl = array_tc.shape[0]
+	nc = array_tc.shape[1]
+	
+	array_rgba = np.zeros((nl,nc, 4)).astype(np.uint8)	
+	
+	#tc media
+	array_rgba[:,:,0] = np.uint8(array_tc[:,:])
+	array_rgba[:,:,1] = np.uint8(array_tc[:,:])	
+	array_rgba[:,:,2] = np.uint8(array_tc[:,:])
+	array_rgba[:,:,3] = 255
+	
+	
+	return array_rgba
+
+		
+#recebe uma tupla contento na primeira posição um vetor indicando o tamanho de cada canal
+#e na segunda posicao a matriz rgba 16 bits
+def conversorImgQuantizada(rgba_eq):
+	
+	rgba8bits = np.zeros(rgba_eq[1].shape).astype(np.uint8)
+	rgba8bits[:,:,0] = ( rgba_eq[1][:,:,0]/(2**rgba_eq[0][0]-1) ) * 255
+	rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
+	rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
+	rgba8bits[:,:,3] = rgba_eq[1][:,:,3]
+	
+	return rgba8bits	
 
 
-def abre_img():
-   loc_img = tkfile.askopenfilename()
-   loc_img = "./teste_MSE1.png"
-   img = pil.Image.open(loc_img, mode='r')
-
-   return loc_img, img
-
-def carrega_img(str):
-    loc_img = str
-    img = pil.Image.open(loc_img, mode='r')
-
-    return img
-
-
-def img_p_RGB(img):
-    return np.array(img)
-
-
-def img_p_TC(img):
-    return 0
+def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
+	r = range(1, 17)
+	if bitsR in r and bitsG in r and bitsB in r:
+		
+		#tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
+		rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
+		
+		rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
+		rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
+		rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
+		rgba_eq[1][:,:,3] = rgba_array[:,:,3]
+		
+		return rgba_eq
+		
+	else:
+		print("\ntamanho dos canais esta fora do intervalo [1,16] bits!")
 
 
-def RGB_p_TC(array_rgb):
-    return 0
+def binarizador_tc(tc_array, limiar):
 
+	if limiar >=0 and limiar<=255:
+		array_binario = np.zeros(tc_array.shape).astype(np.uint8)
+		
+		#array_binario = 255*(tc_array>limiar)#if array_binario[:,:] >=limiar else 0
+		
+		'''shape = tc_array.shape
+		for i in range(shape[0]):
+			for j in range(shape[1]):'''
+		array_binario[:,:] = 255*(tc_array[:,:]>limiar)# if tc_array[i,j]>limiar else 0
+		
+		print(array_binario)
+		return array_binario
+		
+	else:
+		print("\nvalor invalido de limiar!")
+		
+def binarizador_rgb(rgba_array, limiarR, limiarG, limiarB):
 
-def TC_p_RGB(array_rgb):
-    return 0
+	if limiarR >=0 and limiarR<=255  and limiarG >=0 and limiarG<=255 and limiarB >=0 and limiarB<=255:
+		
+		array_binario = np.zeros(rgba_array.shape).astype(np.uint8)
 
+		shape = rgba_array.shape
+		'''for i in range(shape[0]):
+			for j in range(shape[1]):'''
+		array_binario[:, :, 0] = 255*(rgba_array[:, :, 0]>limiarR)# if rgba_array[:, :, 0]>limiarR else 0
+		array_binario[:, :, 1] = 255*(rgba_array[:, :, 1]>limiarG)# if rgba_array[:, :, 1]>limiarG else 0
+		array_binario[:, :, 2] = 255*(rgba_array[:, :, 2]>limiarB)# if rgba_array[:, :, 2]>limiarB else 0
+		array_binario[:, :, 3] = rgba_array[:, :, 3]
+		
+		return array_binario
+		
+	else:
+		print("\nvalor invalido de limiar!")
 
-def RGB_p_img(array_rgb, formato):
-    img = 0
-
-    if formato == '.jpg':
-        return 0
-    if formato == '.png':
-        img = pil.Image.fromarray(array_rgb, 'RGB')
-
-    return img
-
-
-def TC_p_img(array_rgb, formato):
-    if formato == '.jpg':
-        return 0
-    if formato == '.png':
-        return 0
-
-
+#recebe uma imagem em tons de cinza
+def otsu_tc(img_tc):
+	 hist = np.array(img_tc.histogram())
+	 
+	 n = img_tc.size[0]*img_tc.size[1]
+	 
+	 vmax = 0
+	 limiar = 0
+	 
+	 wb = 0
+	 sumb = 0
+	 sumt = sum(t*hist[t] for t in range(256))
+	 
+	 for i in range(256):
+		 
+		 wb += hist[i]
+		 wf = n - wb
+		 
+		 sumb += i*hist[i]
+		 sumf = sumt - sumb
+		 
+		 mb = sumb
+		 if wb>0:
+			 mb = mb/wb
+			 
+		 mf = sumf
+		 if wf>0:
+	          mf = mf/wf
+		 
+		 
+		 var = wb*wf*((mb-mf)**2)
+		 
+		 if var>=vmax:
+			 vmax = var
+			 limiar = i
+		 
+	 return limiar
+	
+def otsu_rgb(img_rgba):
+	hist = np.array(img_rgba.histogram())
+	histr = hist[0:256]
+	histg = hist[256:512]
+	histb = hist[512:768]
+	hist = [histr, histg, histb]
+	
+	n = img_rgba.size[0]*img_rgba.size[1]
+	limiar = [0,0,0]
+	
+	#para r g b
+	for j in range(3):
+	
+		vmax = 0	
+		 
+		wb = 0
+		sumb = 0
+		sumt = sum(t*hist[j][t] for t in range(256))
+		 
+		for i in range(256):
+			 
+			wb += hist[j][i]
+			wf = n - wb
+			 
+			sumb += i*hist[j][i]
+			sumf = sumt - sumb
+			 
+			mb = sumb
+			if wb>0:
+				mb = mb/wb
+				 
+			mf = sumf
+			if wf>0:
+				 mf = mf/wf
+			 
+			 
+			var = wb*wf*((mb-mf)**2)
+			 
+			if var>=vmax:
+				vmax = var
+				limiar[j] = i
+		 
+	return limiar
+	
 def MSE(img1, img2):
     l1, a1 = img1.size  # largura e altura img1
     l2, a2 = img2.size  # largura e altura img1
 
-    img1_rgb = img_p_RGB(img1)
-    img2_rgb = img_p_RGB(img2)
-
-    dim = img1_rgb.shape[-1]
-
+    img1_rgb = np.array(img1)
+    img2_rgb = np.array(img2)
+    
     erro = 0
 
+    ''' Ver a necessidade de normalizar o valor da diferença. Sem normalizar, o erro fica estranho '''
     if l1 == l2 and a1 == a2 and type(img1) == type(img2):
-        erro = sum(
-            [(img1_rgb[i, j, k] / 255.0 - img2_rgb[i, j, k] / 255.0) ** 2 for i in range(a1) for j in range(l1) for k in
-             range(dim)])
+        erro = ( ((img1_rgb[:, :, :-1] - img2_rgb[:, :, :-1])/255.0) ** 2 ).sum()
     else:
         print("imagens de tipo ou tamanho diferente!")
 
-    return erro / (l1 * a1)
+    return erro / (3 * l1 * a1)
 
 
-def filtro_vermelho_RGB(array_rgb):
-    array_rgb[:, :, 0] = 255
-    return array_rgb
+def histograma(img):
+    
+    L = 256
+    h = img.histogram()    
+    tam = len(h) // L    
+    colors = ['k'] if tam == 1 else ['r', 'g', 'b']
 
+    for i in range(tam):
+        plt.subplot(tam, 1, i+1)
+        plt.xlim(0, 256)
+        plt.bar(range(L), h[i*L:(i+1)*L], color = colors[i], edgecolor = colors[i])
+     
+    return plt
+  
+def equalizacao_histograma(img):
+	    
+    L=256
+    l, a = img.size    
+    h = img.histogram()    
+    img_rgb = np.array(img)    
+    tam = len(h) // L    
+    indice = []
+    
+    for j in range(tam):
+        h_n = h[j*L:(j+1)*L]
+        indice.append([])
+        soma = 0
+        for i in range(len(h_n)):
+            indice[-1].append( round ( ( (L - 1) / (l*a) ) * soma )  )
+       
+    indice = np.array(indice).astype(np.uint8)
+    
+    if tam == 3:
+        for i in range(tam):
+            img_rgb[:, :, i] = indice[i, img_rgb[:, :, i]]
+            img = pil.fromarray(img_rgb, 'RGB')
+    else:
+        img_rgb[:, :] = indice[0, img_rgb[:, :]]
+        img = pil.fromarray(img_rgb, 'L')
+    
+    
+    return img, histograma(img)
 
-def filtro_vermelhoLeve_RGB(array_rgb):
-    array_rgb[:, :, 0] += 30
+def correcaoGamma(array, c, gamma):
+    array = ((c * (array/255)**gamma)*255).astype(np.uint8)
+    return (array)
 
-    return (array_rgb)
-
-
-def tranformacaoGamma(array_rgb, c, gamma):
-    # print("oi", array_rgb)
-
-    array_rgb = array_rgb ** 0.7
-    print(array_rgb)
-
-    # for i in range(nc) for j in range(nl) for k in range(3)
-    # print(array_rgb)
-
-#    nl, nc, dim = array_rgb.shape
-
-
-    # for i in range(nl):
-    # 	for j in range(nc):
-    # 		for k in range(dim):
-    # 			array_rgb[i, j, k] = c*array_rgb[i, j, k]**gamma
-
-    return (array_rgb)
-
-'''
-#abre uma imagem e aplica um filtro vermelho leve e forte:
-
-img1 = abre_img() #img original
-img2 = copy.copy(img1) #com filtro vermelho leve
-img3 = copy.copy(img1) #com filtro vermelho forte
-
-img1 = RGB_p_img(img_p_RGB(img1), '.png') #manter todas as imagens da mesma classe do 'pil': pil.* -> PIL.Image
-img2 = RGB_p_img(filtro_vermelhoLeve_RGB(img_p_RGB(img2)), '.png')
-img3 = RGB_p_img(filtro_vermelho_RGB(img_p_RGB(img3)), '.png')
-img1.save("teste_MSE1.png")
-img2.save("teste_MSE2.png")
-img3.save("teste_MSE3.png")
-'''
-
-# teste MSE:
-# img1 = abre_img()
-# img2 = abre_img()
-# img3 = abre_img()
-#
-# print("MSE 1-2:", MSE(img1, img2))
-# print("MSE 1-3:", MSE(img1, img3))
-
-
-# testes avulcos:
-
-# loc_img = tkfile.askopenfilename()
-# img = pil.Image.open(loc_img, mode='r')
-# loc_img, img =  abre_img()
-# largura_img, altura_img = img.size
-
-# print(loc_img, "\n", largura_img, "x", altura_img, "\nformato: ", type(img))
-
-# img.show()
-
-# img_rgb = np.array(img)
-# print(img_rgb)
-# print("img_rgb[2,2]: ",img_rgb[2,2], "  ", img_rgb.shape[1], "x", img_rgb.shape[0], "  ", img_rgb[2,2].shape[0])
-# print(img_rgb.shape)
-
-# img = pil.Image.fromarray(img_rgb, 'RGB')
-# img = pil.JpegImagePlugin.fromarray(img_rgb, 'RGB')
-
-# img.show()
-
-# img.close()
-
-# print(type(img))
-# img.save('output.png')
-
-# img = pil.JpegImagePlugin.JpegImageFile(img)
-
-# print(type(img))
-
-
-# img1 = abre_img()
-# img2 = abre_img()
-# MSE(img1, img2)
-
-loc_img1 = "./teste_MSE1.png"
-loc_img2 = "./teste_MSE2.png"
-loc_img3 = "./teste_MSE3.png"
-
-img1 = carrega_img(loc_img1)
-# img2 = carrega_img(loc_img1)
-# img3 = carrega_img(loc_img1)
-
-# img2 = RGB_p_img(filtro_vermelhoLeve_RGB(img_p_RGB(img2)), '.png')
-# img3 = RGB_p_img(filtro_vermelho_RGB(img_p_RGB(img3)), '.png')
-
-# print("MSE 1-2:", MSE(img1, img2))
-# print("MSE 1-3:", MSE(img1, img3))
-
-img1.show()
-# img2.show()
-# img3.show()
-
-
-img_rgb = np.array(img1)
-# print(img_rgb)
-img_rgb = tranformacaoGamma(img_rgb, 1, 0.7)
-img = pil.Image.fromarray(img_rgb, 'RGB')
+#quantizador do pil
+'''#teste equalizador do pil
+img = pil.open("TESTE.png")
+rgba = np.array(img)
+#print(rgba)
 img.show()
-# print(img)
-# img = pil.JpegImagePlugin.JpegImageFile(img)
+#print(type(img))
+nbits = 5
+img = img.quantize(2**nbits, 0)
+rgbanbits = np.array(img)
+#print(rgbanbits)
+img.show()
+#print(type(img))'''
 
 
-# largura_img, altura_img = img.size
 
-# print(loc_img, "\n", largura_img, "x", altura_img, "\nformato: ", type(img))
+#quantizador uniforme implementado
+'''img = pil.open("TESTE.png")
+img.show()
 
-# img.show()
+img = img.convert('RGBA')
+rgba_array = np.array(img)
+#print("\nrgba_array:\n\n", rgba_array)
+
+rgba_eq = quantizadorUniforme(rgba_array, 2, 2, 2)#arrayrgba quantizado
+#print("\nrgba_eq:\n\n",rgba_eq[1])
+
+rgba_eq = conversorImgQuantizada(rgba_eq)#array quantizado convertido para 8bits
+#print("\nrgba_eq:\n\n",rgba_eq)
+
+
+img = pil.fromarray(rgba_eq, 'RGBA')
+img.show()'''
+
+
+
+
+
+#teste binarizador limiarização
+'''tc = rgba_p_tc(img_p_rgba("otsu.jpg"), 2)
+img = pil.fromarray(tc, 'L')
+img.show()
+
+limiar = otsu_tc(img)
+print("limiar: ", limiar)
+
+tc = binarizador_tc(tc, limiar)
+img = pil.fromarray(tc, 'L')
+img.show()'''
+
+
+
+
+#teste binarizador rgb
+'''nome = "bin.png"
+img = pil.open(nome).convert('RGBA')
+img.show()
+rgba_array = img_p_rgba(nome)
+
+#limiar = [127, 127, 127]
+limiar = otsu_rgb(img)
+
+rgba_array = binarizador_rgb(rgba_array, limiar[0], limiar[1], limiar[2])
+img = pil.fromarray(rgba_array, 'RGBA')
+img.show()'''
+
+
+
+#binarizador
+'''
+#print("tc antes de binarizar: \n\n", tc)
+tc = binarizador_tc(tc, 150)
+#print("tc depois de binarizar: \n\n", tc)
+img = pil.fromarray(tc, 'L')
+img.show()'''
