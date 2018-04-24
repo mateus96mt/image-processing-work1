@@ -1,7 +1,5 @@
 import numpy as np
-import scipy as sc
 from PIL import Image as pil
-import copy
 import matplotlib.pyplot as plt
 
 #1
@@ -55,17 +53,17 @@ def conversorImgQuantizada(rgba_eq):
     
     rgba8bits = np.zeros(rgba_eq[1].shape).astype(np.uint8)
 
-    if rgba_eq[0][0]>=6:
+    if rgba_eq[0][0]>=5:
         rgba8bits[:,:,0] = ( rgba_eq[1][:,:,0]/(2**rgba_eq[0][0]-1) ) * 255
     else:
         rgba8bits[:,:,0] = rgba_eq[1][:,:,0]
 
-    if rgba_eq[0][1]>=6:
+    if rgba_eq[0][1]>=5:
         rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
     else:
         rgba8bits[:,:,1] = rgba_eq[1][:,:,1]
     
-    if rgba_eq[0][2]>=6:    
+    if rgba_eq[0][2]>=5:    
         rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
     else:
         rgba8bits[:,:,2] = rgba_eq[1][:,:,2]
@@ -84,31 +82,23 @@ def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
         #tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
         rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
         
-        img = pil.fromarray(rgba_array, 'RGBA')
-        hist = img.histogram()
+        img = pil.fromarray(rgba_array, 'RGB')
         
-        en = np.arange(255)        
+        hist = np.array(img.histogram())
+        
+        en = np.arange(256)        
         
         histr = np.array(list(zip(en, hist[:256])))
         histg = np.array(list(zip(en, hist[256:512])))
         histb = np.array(list(zip(en, hist[512:])))
         
-        #print(histr)        
-        
         mfr = np.array(sorted(histr, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsR]
-        mfg = np.array(sorted(histg, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsG]
-        mfb = np.array(sorted(histb, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsB]
+        mfg = np.array(sorted(histg, key=lambda x: x[1], reverse=True))[:2**bitsG]#[:][0])[:2**bitsG]
+        mfb = np.array(sorted(histb, key=lambda x: x[1], reverse=True))[:2**bitsB]#[:][0])[:2**bitsB]
         
-        #print(mfr)        
-        
-        #energias mais frequentes de forma ordenada
         mfr = sorted(mfr[:,0])
         mfg = sorted(mfg[:,0])
         mfb = sorted(mfb[:,0])
-        
-        '''print("len: ", len(mfr), mfr, "\n")
-        print("len: ", len(mfg), mfg, "\n")
-        print("len: ", len(mfb), mfb, "\n")'''
                 
         dpsr = np.zeros((256))
         dpsg = np.zeros((256))
@@ -117,7 +107,6 @@ def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
         dpsr[0:mfr[0]] = mfr[0]
         for i in range(1, len(mfr)):
             m = (mfr[i-1] + mfr[i])//2
-            #print(mfr[i-1], "   ", m, "   ", mfr[i])
             dpsr[mfr[i-1]:m+1] = mfr[i-1]
             dpsr[m+1:mfr[i]+1] = mfr[i]
         dpsr[mfr[-1]:] = mfr[-1]
@@ -125,7 +114,6 @@ def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
         dpsg[0:mfg[0]] = mfg[0]
         for i in range(1, len(mfg)):
             m = (mfg[i-1] + mfg[i])//2
-            #print(mfg[i-1], "   ", m, "   ", mfg[i])
             dpsg[mfg[i-1]:m+1] = mfg[i-1]
             dpsg[m+1:mfg[i]+1] = mfg[i]
         dpsg[mfg[-1]:] = mfg[-1]
@@ -134,74 +122,30 @@ def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
         dpsb[0:mfb[0]] = mfb[0]
         for i in range(1, len(mfb)):
             m = (mfb[i-1] + mfb[i])//2
-            #print(mfg[i-1], "   ", m, "   ", mfg[i])
             dpsb[mfb[i-1]:m+1] = mfb[i-1]
             dpsb[m+1:mfb[i]+1] = mfb[i]
         dpsb[mfb[-1]:] = mfb[-1]
         
-        '''print("\ndpsr\n", dpsr)
-        print("\ndpsg\n", dpsg)
-        print("\ndpsb\n", dpsb)'''
         
-        #print(dpsb)
-        '''print(rgba_array[:,:,0])        
-        print(dpsr[rgba_array[:,:,0]], "\n\n")
-        
-        rtest = np.array(list(zip(rgba_array[:,:,0], dpsr[rgba_array[:,:,0]])))        
-        print(rtest)'''
-        
-        
-        '''
-        print(rgba_array[:,:,1])        
-        print(dpsg[rgba_array[:,:,1]], "\n\n")
-        
-        print(rgba_array[:,:,2])        
-        print(dpsb[rgba_array[:,:,2]], "\n\n")
-        '''
-        
-        if bitsR>=6:
+        if bitsR>=5:
             rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
         else:
             rgba_eq[1][:,:,0] = dpsr[rgba_array[:,:,0]]
         
         
-        if bitsG>=6:
+        if bitsG>=5:
             rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
         else:
             rgba_eq[1][:,:,1] = dpsg[rgba_array[:,:,1]]
         
         
-        if bitsB>=6: 
+        if bitsB>=5: 
             rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
         else:
             rgba_eq[1][:,:,2] = dpsb[rgba_array[:,:,2]]
-            
-        #print(dpsb)
-        #print(rgba_eq)
-        
-
-        '''if bitsR < 8 and bitsG < 8 and bitsB < 8:'''
-            
-        
-        '''
-        #reducao no canal R e G
-        if bitsR<6 and bitsG<6:
-            
-        #reducao no canal R e B
-        if bitsR<6 and bitsB<6:
-            
-        #reducao no canal G e B
-        if bitsG<6 and bitsB<6:'''
-        
-        
         
         #uniforme no canal alpha
         rgba_eq[1][:,:,3] = rgba_array[:,:,3]
-        
-        '''print("original:\n", rgba_array, "\n\n")
-        print("quantizada:\n", rgba_eq[1], "\n\n")'''
-        
-        
         
         return rgba_eq
         
@@ -232,10 +176,7 @@ def binarizador_rgb(rgba_array, limiarR, limiarG, limiarB):
     if limiarR >=0 and limiarR<=255  and limiarG >=0 and limiarG<=255 and limiarB >=0 and limiarB<=255:
         
         array_binario = np.zeros(rgba_array.shape).astype(np.uint8)
-
-        shape = rgba_array.shape
-        '''for i in range(shape[0]):
-            for j in range(shape[1]):'''
+        
         array_binario[:, :, 0] = 255*(rgba_array[:, :, 0]>limiarR)# if rgba_array[:, :, 0]>limiarR else 0
         array_binario[:, :, 1] = 255*(rgba_array[:, :, 1]>limiarG)# if rgba_array[:, :, 1]>limiarG else 0
         array_binario[:, :, 2] = 255*(rgba_array[:, :, 2]>limiarB)# if rgba_array[:, :, 2]>limiarB else 0
