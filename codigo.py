@@ -6,216 +6,328 @@ import matplotlib.pyplot as plt
 
 #1
 def img_p_rgba(loc_img):
-	img = pil.open(loc_img, 'r')
-	array = np.array(img.convert('RGBA'))
-	
-	return array
+    img = pil.open(loc_img, 'r')
+    array = np.array(img.convert('RGBA'))
+    
+    return array
 
 #2
 def rgba_p_tc(array_rgba, tipo):
-	nl = array_rgba.shape[0]
-	nc = array_rgba.shape[1]
-	
-	array_tc = np.zeros((nl,nc)).astype(np.uint8)
-		
-	#leveza
-	if tipo == 1:	
-		array_tc[:, :] = ( array_rgba[:,:,:-1].astype(np.uint16).max(axis=2)+array_rgba[:,:,:-1].astype(np.uint16).min(axis=2) ) / 2
-	
-	#media
-	if tipo == 2:
-		array_tc[:, :] = (np.uint16(array_rgba[:,:,0]) + np.uint16(array_rgba[:,:,1]) + np.uint16(array_rgba[:,:,2]))//3
-		
-	#luminosidade
-	if tipo == 3:
-		array_tc[:, :] = 0.21*array_rgba[:,:,0] + 0.72*array_rgba[:,:,1] + 0.07*array_rgba[:,:,2]
-		
-	return array_tc
+    nl = array_rgba.shape[0]
+    nc = array_rgba.shape[1]
+    
+    array_tc = np.zeros((nl,nc)).astype(np.uint8)
+        
+    #leveza
+    if tipo == 1:    
+        array_tc[:, :] = ( array_rgba[:,:,:-1].astype(np.uint16).max(axis=2)+array_rgba[:,:,:-1].astype(np.uint16).min(axis=2) ) / 2
+    
+    #media
+    if tipo == 2:
+        array_tc[:, :] = (np.uint16(array_rgba[:,:,0]) + np.uint16(array_rgba[:,:,1]) + np.uint16(array_rgba[:,:,2]))//3
+        
+    #luminosidade
+    if tipo == 3:
+        array_tc[:, :] = 0.21*array_rgba[:,:,0] + 0.72*array_rgba[:,:,1] + 0.07*array_rgba[:,:,2]
+        
+    return array_tc
 
 #3
 def tc_p_rgba(array_tc):
-	nl = array_tc.shape[0]
-	nc = array_tc.shape[1]
-	
-	array_rgba = np.zeros((nl,nc, 4)).astype(np.uint8)	
-	
-	#tc media
-	array_rgba[:,:,0] = np.uint8(array_tc[:,:])
-	array_rgba[:,:,1] = np.uint8(array_tc[:,:])	
-	array_rgba[:,:,2] = np.uint8(array_tc[:,:])
-	array_rgba[:,:,3] = 255
-	
-	
-	return array_rgba
+    nl = array_tc.shape[0]
+    nc = array_tc.shape[1]
+    
+    array_rgba = np.zeros((nl,nc, 4)).astype(np.uint8)    
+    
+    #tc media
+    array_rgba[:,:,0] = np.uint8(array_tc[:,:])
+    array_rgba[:,:,1] = np.uint8(array_tc[:,:])    
+    array_rgba[:,:,2] = np.uint8(array_tc[:,:])
+    array_rgba[:,:,3] = 255
+    
+    
+    return array_rgba
 
-		
+        
 #recebe uma tupla contento na primeira posição um vetor indicando o tamanho de cada canal
 #e na segunda posicao a matriz rgba 16 bits
 def conversorImgQuantizada(rgba_eq):
-	
-	rgba8bits = np.zeros(rgba_eq[1].shape).astype(np.uint8)
-	rgba8bits[:,:,0] = ( rgba_eq[1][:,:,0]/(2**rgba_eq[0][0]-1) ) * 255
-	rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
-	rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
-	rgba8bits[:,:,3] = rgba_eq[1][:,:,3]
-	
-	return rgba8bits	
+    
+    rgba8bits = np.zeros(rgba_eq[1].shape).astype(np.uint8)
+
+    if rgba_eq[0][0]>=6:
+        rgba8bits[:,:,0] = ( rgba_eq[1][:,:,0]/(2**rgba_eq[0][0]-1) ) * 255
+    else:
+        rgba8bits[:,:,0] = rgba_eq[1][:,:,0]
+
+    if rgba_eq[0][1]>=6:
+        rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
+    else:
+        rgba8bits[:,:,1] = rgba_eq[1][:,:,1]
+    
+    if rgba_eq[0][2]>=6:    
+        rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
+    else:
+        rgba8bits[:,:,2] = rgba_eq[1][:,:,2]
+
+
+    rgba8bits[:,:,3] = rgba_eq[1][:,:,3]
+
+    
+    return rgba8bits    
 
 
 def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
-	r = range(1, 17)
-	if bitsR in r and bitsG in r and bitsB in r:
-		
-		#tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
-		rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
-		
-		
-		if bitsR>=1:
-			rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
-		if bitsG>=1:
-			rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
-		if bitsB>=1:
-			rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
-		
-		'''#reducao no canal R e G
-		if bitsR<6 and bitsG<6:
-		
-		#reducao no canal R e B
-		if bitsR<6 and bitsB<6:
-			
-		#reducao no canal G e B
-		if bitsG<6 and bitsB<6:'''
-		
-		
-		
-		#uniforme no canal alpha
-		rgba_eq[1][:,:,3] = rgba_array[:,:,3]
-		
-		return rgba_eq
-		
-	else:
-		print("\ntamanho dos canais esta fora do intervalo [1,16] bits!")
+    r = range(1, 17)
+    if bitsR in r and bitsG in r and bitsB in r:
+        
+        #tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
+        rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
+        
+        img = pil.fromarray(rgba_array, 'RGBA')
+        hist = img.histogram()
+        
+        en = np.arange(255)        
+        
+        histr = np.array(list(zip(en, hist[:256])))
+        histg = np.array(list(zip(en, hist[256:512])))
+        histb = np.array(list(zip(en, hist[512:])))
+        
+        #print(histr)        
+        
+        mfr = np.array(sorted(histr, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsR]
+        mfg = np.array(sorted(histg, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsG]
+        mfb = np.array(sorted(histb, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsB]
+        
+        #print(mfr)        
+        
+        #energias mais frequentes de forma ordenada
+        mfr = sorted(mfr[:,0])
+        mfg = sorted(mfg[:,0])
+        mfb = sorted(mfb[:,0])
+        
+        '''print("len: ", len(mfr), mfr, "\n")
+        print("len: ", len(mfg), mfg, "\n")
+        print("len: ", len(mfb), mfb, "\n")'''
+                
+        dpsr = np.zeros((256))
+        dpsg = np.zeros((256))
+        dpsb = np.zeros((256))
+        
+        dpsr[0:mfr[0]] = mfr[0]
+        for i in range(1, len(mfr)):
+            m = (mfr[i-1] + mfr[i])//2
+            #print(mfr[i-1], "   ", m, "   ", mfr[i])
+            dpsr[mfr[i-1]:m+1] = mfr[i-1]
+            dpsr[m+1:mfr[i]+1] = mfr[i]
+        dpsr[mfr[-1]:] = mfr[-1]
+        
+        dpsg[0:mfg[0]] = mfg[0]
+        for i in range(1, len(mfg)):
+            m = (mfg[i-1] + mfg[i])//2
+            #print(mfg[i-1], "   ", m, "   ", mfg[i])
+            dpsg[mfg[i-1]:m+1] = mfg[i-1]
+            dpsg[m+1:mfg[i]+1] = mfg[i]
+        dpsg[mfg[-1]:] = mfg[-1]
+        
+        
+        dpsb[0:mfb[0]] = mfb[0]
+        for i in range(1, len(mfb)):
+            m = (mfb[i-1] + mfb[i])//2
+            #print(mfg[i-1], "   ", m, "   ", mfg[i])
+            dpsb[mfb[i-1]:m+1] = mfb[i-1]
+            dpsb[m+1:mfb[i]+1] = mfb[i]
+        dpsb[mfb[-1]:] = mfb[-1]
+        
+        '''print("\ndpsr\n", dpsr)
+        print("\ndpsg\n", dpsg)
+        print("\ndpsb\n", dpsb)'''
+        
+        #print(dpsb)
+        '''print(rgba_array[:,:,0])        
+        print(dpsr[rgba_array[:,:,0]], "\n\n")
+        
+        rtest = np.array(list(zip(rgba_array[:,:,0], dpsr[rgba_array[:,:,0]])))        
+        print(rtest)'''
+        
+        
+        '''
+        print(rgba_array[:,:,1])        
+        print(dpsg[rgba_array[:,:,1]], "\n\n")
+        
+        print(rgba_array[:,:,2])        
+        print(dpsb[rgba_array[:,:,2]], "\n\n")
+        '''
+        
+        if bitsR>=6:
+            rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
+        else:
+            rgba_eq[1][:,:,0] = dpsr[rgba_array[:,:,0]]
+        
+        
+        if bitsG>=6:
+            rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
+        else:
+            rgba_eq[1][:,:,1] = dpsg[rgba_array[:,:,1]]
+        
+        
+        if bitsB>=6: 
+            rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
+        else:
+            rgba_eq[1][:,:,2] = dpsb[rgba_array[:,:,2]]
+            
+        #print(dpsb)
+        #print(rgba_eq)
+        
+
+        '''if bitsR < 8 and bitsG < 8 and bitsB < 8:'''
+            
+        
+        '''
+        #reducao no canal R e G
+        if bitsR<6 and bitsG<6:
+            
+        #reducao no canal R e B
+        if bitsR<6 and bitsB<6:
+            
+        #reducao no canal G e B
+        if bitsG<6 and bitsB<6:'''
+        
+        
+        
+        #uniforme no canal alpha
+        rgba_eq[1][:,:,3] = rgba_array[:,:,3]
+        
+        '''print("original:\n", rgba_array, "\n\n")
+        print("quantizada:\n", rgba_eq[1], "\n\n")'''
+        
+        
+        
+        return rgba_eq
+        
+    else:
+        print("\ntamanho dos canais esta fora do intervalo [1,16] bits!")
 
 
 def binarizador_tc(tc_array, limiar):
 
-	if limiar >=0 and limiar<=255:
-		array_binario = np.zeros(tc_array.shape).astype(np.uint8)
-		
-		#array_binario = 255*(tc_array>limiar)#if array_binario[:,:] >=limiar else 0
-		
-		'''shape = tc_array.shape
-		for i in range(shape[0]):
-			for j in range(shape[1]):'''
-		array_binario[:,:] = 255*(tc_array[:,:]>limiar)# if tc_array[i,j]>limiar else 0
-		
-		print(array_binario)
-		return array_binario
-		
-	else:
-		print("\nvalor invalido de limiar!")
-		
+    if limiar >=0 and limiar<=255:
+        array_binario = np.zeros(tc_array.shape).astype(np.uint8)
+        
+        #array_binario = 255*(tc_array>limiar)#if array_binario[:,:] >=limiar else 0
+        
+        '''shape = tc_array.shape
+        for i in range(shape[0]):
+            for j in range(shape[1]):'''
+        array_binario[:,:] = 255*(tc_array[:,:]>limiar)# if tc_array[i,j]>limiar else 0
+        
+        print(array_binario)
+        return array_binario
+        
+    else:
+        print("\nvalor invalido de limiar!")
+        
 def binarizador_rgb(rgba_array, limiarR, limiarG, limiarB):
 
-	if limiarR >=0 and limiarR<=255  and limiarG >=0 and limiarG<=255 and limiarB >=0 and limiarB<=255:
-		
-		array_binario = np.zeros(rgba_array.shape).astype(np.uint8)
+    if limiarR >=0 and limiarR<=255  and limiarG >=0 and limiarG<=255 and limiarB >=0 and limiarB<=255:
+        
+        array_binario = np.zeros(rgba_array.shape).astype(np.uint8)
 
-		shape = rgba_array.shape
-		'''for i in range(shape[0]):
-			for j in range(shape[1]):'''
-		array_binario[:, :, 0] = 255*(rgba_array[:, :, 0]>limiarR)# if rgba_array[:, :, 0]>limiarR else 0
-		array_binario[:, :, 1] = 255*(rgba_array[:, :, 1]>limiarG)# if rgba_array[:, :, 1]>limiarG else 0
-		array_binario[:, :, 2] = 255*(rgba_array[:, :, 2]>limiarB)# if rgba_array[:, :, 2]>limiarB else 0
-		array_binario[:, :, 3] = rgba_array[:, :, 3]
-		
-		return array_binario
-		
-	else:
-		print("\nvalor invalido de limiar!")
+        shape = rgba_array.shape
+        '''for i in range(shape[0]):
+            for j in range(shape[1]):'''
+        array_binario[:, :, 0] = 255*(rgba_array[:, :, 0]>limiarR)# if rgba_array[:, :, 0]>limiarR else 0
+        array_binario[:, :, 1] = 255*(rgba_array[:, :, 1]>limiarG)# if rgba_array[:, :, 1]>limiarG else 0
+        array_binario[:, :, 2] = 255*(rgba_array[:, :, 2]>limiarB)# if rgba_array[:, :, 2]>limiarB else 0
+        array_binario[:, :, 3] = rgba_array[:, :, 3]
+        
+        return array_binario
+        
+    else:
+        print("\nvalor invalido de limiar!")
 
 #recebe uma imagem em tons de cinza
 def otsu_tc(img_tc):
-	 hist = np.array(img_tc.histogram())
-	 
-	 n = img_tc.size[0]*img_tc.size[1]
-	 
-	 vmax = 0
-	 limiar = 0
-	 
-	 wb = 0
-	 sumb = 0
-	 sumt = sum(t*hist[t] for t in range(256))
-	 
-	 for i in range(256):
-		 
-		 wb += hist[i]
-		 wf = n - wb
-		 
-		 sumb += i*hist[i]
-		 sumf = sumt - sumb
-		 
-		 mb = sumb
-		 if wb>0:
-			 mb = mb/wb
-			 
-		 mf = sumf
-		 if wf>0:
-	          mf = mf/wf
-		 
-		 
-		 var = wb*wf*((mb-mf)**2)
-		 
-		 if var>=vmax:
-			 vmax = var
-			 limiar = i
-		 
-	 return limiar
-	
+     hist = np.array(img_tc.histogram())
+     
+     n = img_tc.size[0]*img_tc.size[1]
+     
+     vmax = 0
+     limiar = 0
+     
+     wb = 0
+     sumb = 0
+     sumt = sum(t*hist[t] for t in range(256))
+     
+     for i in range(256):
+         
+         wb += hist[i]
+         wf = n - wb
+         
+         sumb += i*hist[i]
+         sumf = sumt - sumb
+         
+         mb = sumb
+         if wb>0:
+             mb = mb/wb
+             
+         mf = sumf
+         if wf>0:
+              mf = mf/wf
+         
+         
+         var = wb*wf*((mb-mf)**2)
+         
+         if var>=vmax:
+             vmax = var
+             limiar = i
+         
+     return limiar
+    
 def otsu_rgb(img_rgba):
-	hist = np.array(img_rgba.histogram())
-	histr = hist[0:256]
-	histg = hist[256:512]
-	histb = hist[512:768]
-	hist = [histr, histg, histb]
-	
-	n = img_rgba.size[0]*img_rgba.size[1]
-	limiar = [0,0,0]
-	
-	#para r g b
-	for j in range(3):
-	
-		vmax = 0	
-		 
-		wb = 0
-		sumb = 0
-		sumt = sum(t*hist[j][t] for t in range(256))
-		 
-		for i in range(256):
-			 
-			wb += hist[j][i]
-			wf = n - wb
-			 
-			sumb += i*hist[j][i]
-			sumf = sumt - sumb
-			 
-			mb = sumb
-			if wb>0:
-				mb = mb/wb
-				 
-			mf = sumf
-			if wf>0:
-				 mf = mf/wf
-			 
-			 
-			var = wb*wf*((mb-mf)**2)
-			 
-			if var>=vmax:
-				vmax = var
-				limiar[j] = i
-		 
-	return limiar
-	
+    hist = np.array(img_rgba.histogram())
+    histr = hist[0:256]
+    histg = hist[256:512]
+    histb = hist[512:768]
+    hist = [histr, histg, histb]
+    
+    n = img_rgba.size[0]*img_rgba.size[1]
+    limiar = [0,0,0]
+    
+    #para r g b
+    for j in range(3):
+    
+        vmax = 0    
+         
+        wb = 0
+        sumb = 0
+        sumt = sum(t*hist[j][t] for t in range(256))
+         
+        for i in range(256):
+             
+            wb += hist[j][i]
+            wf = n - wb
+             
+            sumb += i*hist[j][i]
+            sumf = sumt - sumb
+             
+            mb = sumb
+            if wb>0:
+                mb = mb/wb
+                 
+            mf = sumf
+            if wf>0:
+                 mf = mf/wf
+             
+             
+            var = wb*wf*((mb-mf)**2)
+             
+            if var>=vmax:
+                vmax = var
+                limiar[j] = i
+         
+    return limiar
+    
 def MSE(img1, img2):
     l1, a1 = img1.size  # largura e altura img1
     l2, a2 = img2.size  # largura e altura img1
@@ -249,7 +361,7 @@ def histograma(img):
     return plt
   
 def equalizacao_histograma(img):
-	    
+        
     L=256
     l, a = img.size    
     h = img.histogram()    

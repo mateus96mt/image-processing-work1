@@ -136,7 +136,7 @@ def quantizadorUni(img_entrada, o, s):
         
         rgba_quant = codigo.quantizadorUniforme(array_rgba, bits[0], bits[1], bits[2])
         
-        print(rgba_quant[1])
+        #print(rgba_quant[1])
         
         rgba = codigo.conversorImgQuantizada(rgba_quant)
         img = pil.fromarray(rgba, 'RGBA')
