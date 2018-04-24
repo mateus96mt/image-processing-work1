@@ -69,9 +69,26 @@ def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
 		#tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
 		rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
 		
-		rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
-		rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
-		rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
+		
+		if bitsR>=1:
+			rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
+		if bitsG>=1:
+			rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
+		if bitsB>=1:
+			rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
+		
+		'''#reducao no canal R e G
+		if bitsR<6 and bitsG<6:
+		
+		#reducao no canal R e B
+		if bitsR<6 and bitsB<6:
+			
+		#reducao no canal G e B
+		if bitsG<6 and bitsB<6:'''
+		
+		
+		
+		#uniforme no canal alpha
 		rgba_eq[1][:,:,3] = rgba_array[:,:,3]
 		
 		return rgba_eq

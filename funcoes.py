@@ -2,6 +2,7 @@ import codigo
 import argparse
 import numpy as np
 import PIL.Image as pil
+import matplotlib.pyplot as plt
 
 def img_p_rgba(img_entrada):
     if img_entrada!=None:
@@ -202,13 +203,16 @@ def histograma(img_entrada, o):
         
         if o==None:
             o = 'RGB'
+        if o!='RGB'and o!='L':
+	        print("\nargumento -o invalido!")
         else:
-            if o!='RGB'and o!='L':
-                print("\nargumento -o invalido!")
-            else:
-                img = pil.open(img_entrada).convert(str(o))
-                plt1 = codigo.histograma(img)
-                plt1.show()
+            img = pil.open(img_entrada).convert(str(o))
+            img.show()
+            plt1 = codigo.histograma(img)
+            plt1.show(block=False)
+            plt.draw()
+            plt.pause(0.001)
+            input("Press [enter] to continue.")
     else:
         print("faltando argumento -i [img_entrada]")
 
@@ -240,10 +244,14 @@ def eq_histograma(img_entrada, o, s):
             plt1.append(plt2)
         
             for i in range(2):
-                plt1[i].show()
+                plt1[i].show(block=False)            
             
             if s!=None:
-                img.save(s)
+                img2.save(s)
+            
+            plt.draw()
+            plt.pause(0.001)
+            input("Press [enter] to continue.")
     else:
         print("faltando argumento -i [img_entrada]")
 
@@ -290,7 +298,7 @@ def correcao_gamma(img_entrada, o, s):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("funcao", help="FUNCIONALIDADE A SER EXECUTADA:\timg_para_rgba\timg_para_tc\ttc_para_rgba\tmse\tsnr\tcorrecao_gamma\teq_histograma\tbinrgb\tbintc\tquantizador\thistogram")
+parser.add_argument("funcao", help="FUNCIONALIDADE A SER EXECUTADA:\timg_para_rgba\timg_para_tc\ttc_para_rgba\tmse\tsnr\tcorrecao_gamma\teq_histograma\tbinrgb\tbintc\tquantizador\thistograma")
 
 parser.add_argument("-i", "--img_entrada", help="imagem de entrada, para funcoes que recebem somente uma imagem como parametro de entrada")
 
