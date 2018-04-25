@@ -130,15 +130,24 @@ def quantizadorUni(img_entrada, o, s):
         else:
             bits = o[1:-1].split(',')
         
+        pop = 'n' 
+        if len(bits)==4 and bits[-1]=='p':
+            pop = 'p'
+            bits = bits[:-1]
+        
+        print(bits)
         bits = np.array(bits).astype(int)
+           
+        
+        
         
         array_rgba = np.array(pil.open(img_entrada).convert('RGBA'))
         
-        rgba_quant = codigo.quantizadorUniforme(array_rgba, bits[0], bits[1], bits[2])
+        print("pop: ", pop)        
         
-        #print(rgba_quant[1])
+        rgba_quant = codigo.quantizadorUniforme(array_rgba, bits[0], bits[1], bits[2], pop)
         
-        rgba = codigo.conversorImgQuantizada(rgba_quant)
+        rgba = codigo.conversorImgQuantizada(rgba_quant, pop)
         img = pil.fromarray(rgba, 'RGBA')
         img.show()
         

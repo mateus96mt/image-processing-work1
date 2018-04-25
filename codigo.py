@@ -49,23 +49,18 @@ def tc_p_rgba(array_tc):
         
 #recebe uma tupla contento na primeira posição um vetor indicando o tamanho de cada canal
 #e na segunda posicao a matriz rgba 16 bits
-def conversorImgQuantizada(rgba_eq):
+def conversorImgQuantizada(rgba_eq, pop):
     
     rgba8bits = np.zeros(rgba_eq[1].shape).astype(np.uint8)
 
-    if rgba_eq[0][0]>=5:
+    if pop=='n':
         rgba8bits[:,:,0] = ( rgba_eq[1][:,:,0]/(2**rgba_eq[0][0]-1) ) * 255
+        rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
+        rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
+    
     else:
         rgba8bits[:,:,0] = rgba_eq[1][:,:,0]
-
-    if rgba_eq[0][1]>=5:
-        rgba8bits[:,:,1] = ( rgba_eq[1][:,:,1]/(2**rgba_eq[0][1]-1) ) * 255
-    else:
-        rgba8bits[:,:,1] = rgba_eq[1][:,:,1]
-    
-    if rgba_eq[0][2]>=5:    
-        rgba8bits[:,:,2] = ( rgba_eq[1][:,:,2]/(2**rgba_eq[0][2]-1) ) * 255
-    else:
+        rgba8bits[:,:,1] = rgba_eq[1][:,:,1]        
         rgba8bits[:,:,2] = rgba_eq[1][:,:,2]
 
 
@@ -75,73 +70,67 @@ def conversorImgQuantizada(rgba_eq):
     return rgba8bits    
 
 
-def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB):
+def quantizadorUniforme(rgba_array, bitsR, bitsG, bitsB, pop):
     r = range(1, 17)
     if bitsR in r and bitsG in r and bitsB in r:
         
         #tupla quantos bits tem em cada canal e a matriz rgba de 16 bits
         rgba_eq = [[bitsR, bitsG, bitsB], np.zeros(rgba_array.shape).astype(np.uint16)]
         
-        img = pil.fromarray(rgba_array, 'RGB')
-        
-        hist = np.array(img.histogram())
-        
-        en = np.arange(256)        
-        
-        histr = np.array(list(zip(en, hist[:256])))
-        histg = np.array(list(zip(en, hist[256:512])))
-        histb = np.array(list(zip(en, hist[512:])))
-        
-        mfr = np.array(sorted(histr, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsR]
-        mfg = np.array(sorted(histg, key=lambda x: x[1], reverse=True))[:2**bitsG]#[:][0])[:2**bitsG]
-        mfb = np.array(sorted(histb, key=lambda x: x[1], reverse=True))[:2**bitsB]#[:][0])[:2**bitsB]
-        
-        mfr = sorted(mfr[:,0])
-        mfg = sorted(mfg[:,0])
-        mfb = sorted(mfb[:,0])
-                
-        dpsr = np.zeros((256))
-        dpsg = np.zeros((256))
-        dpsb = np.zeros((256))
-        
-        dpsr[0:mfr[0]] = mfr[0]
-        for i in range(1, len(mfr)):
-            m = (mfr[i-1] + mfr[i])//2
-            dpsr[mfr[i-1]:m+1] = mfr[i-1]
-            dpsr[m+1:mfr[i]+1] = mfr[i]
-        dpsr[mfr[-1]:] = mfr[-1]
-        
-        dpsg[0:mfg[0]] = mfg[0]
-        for i in range(1, len(mfg)):
-            m = (mfg[i-1] + mfg[i])//2
-            dpsg[mfg[i-1]:m+1] = mfg[i-1]
-            dpsg[m+1:mfg[i]+1] = mfg[i]
-        dpsg[mfg[-1]:] = mfg[-1]
-        
-        
-        dpsb[0:mfb[0]] = mfb[0]
-        for i in range(1, len(mfb)):
-            m = (mfb[i-1] + mfb[i])//2
-            dpsb[mfb[i-1]:m+1] = mfb[i-1]
-            dpsb[m+1:mfb[i]+1] = mfb[i]
-        dpsb[mfb[-1]:] = mfb[-1]
-        
-        
-        if bitsR>=5:
+        #uniforme
+        if pop=='n':
             rgba_eq[1][:,:,0] = (rgba_array[:,:,0]/255)*(2**bitsR-1)
-        else:
-            rgba_eq[1][:,:,0] = dpsr[rgba_array[:,:,0]]
-        
-        
-        if bitsG>=5:
             rgba_eq[1][:,:,1] = (rgba_array[:,:,1]/255)*(2**bitsG-1)
-        else:
-            rgba_eq[1][:,:,1] = dpsg[rgba_array[:,:,1]]
-        
-        
-        if bitsB>=5: 
             rgba_eq[1][:,:,2] = (rgba_array[:,:,2]/255)*(2**bitsB-1)
+            
+        #populacional        
         else:
+            img = pil.fromarray(rgba_array, 'RGB')
+        
+            hist = np.array(img.histogram())
+            
+            en = np.arange(256)        
+            
+            histr = np.array(list(zip(en, hist[:256])))
+            histg = np.array(list(zip(en, hist[256:512])))
+            histb = np.array(list(zip(en, hist[512:])))
+            
+            mfr = np.array(sorted(histr, key=lambda x: x[1], reverse=True))[:2**bitsR]#[:][0])[:2**bitsR]
+            mfg = np.array(sorted(histg, key=lambda x: x[1], reverse=True))[:2**bitsG]#[:][0])[:2**bitsG]
+            mfb = np.array(sorted(histb, key=lambda x: x[1], reverse=True))[:2**bitsB]#[:][0])[:2**bitsB]
+            
+            mfr = sorted(mfr[:,0])
+            mfg = sorted(mfg[:,0])
+            mfb = sorted(mfb[:,0])
+                    
+            dpsr = np.zeros((256))
+            dpsg = np.zeros((256))
+            dpsb = np.zeros((256))
+            
+            dpsr[0:mfr[0]] = mfr[0]
+            for i in range(1, len(mfr)):
+                m = (mfr[i-1] + mfr[i])//2
+                dpsr[mfr[i-1]:m+1] = mfr[i-1]
+                dpsr[m+1:mfr[i]+1] = mfr[i]
+            dpsr[mfr[-1]:] = mfr[-1]
+            
+            dpsg[0:mfg[0]] = mfg[0]
+            for i in range(1, len(mfg)):
+                m = (mfg[i-1] + mfg[i])//2
+                dpsg[mfg[i-1]:m+1] = mfg[i-1]
+                dpsg[m+1:mfg[i]+1] = mfg[i]
+            dpsg[mfg[-1]:] = mfg[-1]
+            
+            
+            dpsb[0:mfb[0]] = mfb[0]
+            for i in range(1, len(mfb)):
+                m = (mfb[i-1] + mfb[i])//2
+                dpsb[mfb[i-1]:m+1] = mfb[i-1]
+                dpsb[m+1:mfb[i]+1] = mfb[i]
+            dpsb[mfb[-1]:] = mfb[-1]            
+            
+            rgba_eq[1][:,:,0] = dpsr[rgba_array[:,:,0]]
+            rgba_eq[1][:,:,1] = dpsg[rgba_array[:,:,1]]
             rgba_eq[1][:,:,2] = dpsb[rgba_array[:,:,2]]
         
         #uniforme no canal alpha
